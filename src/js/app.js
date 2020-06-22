@@ -12,7 +12,7 @@ animate();
  
 function init() {
  
-    camera = new THREE.PerspectiveCamera( 70, window.innerWidth / window.innerHeight, 0.01, 35 );
+    camera = new THREE.PerspectiveCamera( 70, window.innerWidth / window.innerHeight, 0.01, 300 );
     camera.position.z = 1;
  
     scene = new THREE.Scene();
@@ -37,6 +37,8 @@ function init() {
     
     let light = makePointLight(0x404040, 3, 10, [0,0, -3]);
     scene.add(light);
+
+    makeStars(500);
  
 
     window.addEventListener('resize', () => updateRendererSize(), false);
@@ -116,6 +118,25 @@ function makeEarth() {
     let earthMesh = new THREE.Mesh( earthGeometry, earthMaterial );
     earthMesh.position.set(0,0,-8.3)
     return earthMesh;
+}
+
+function makeStars(starsQuantity){
+    for(let i=0;i<starsQuantity;i++){
+        console.log(i);
+        let starGeometry = new THREE.SphereGeometry(0.1,10,10);
+        let starMaterial = new THREE.MeshPhongMaterial({color:0xffffff, emissive:0xffffff})
+        let starMesh = new THREE.Mesh(starGeometry, starMaterial);
+        let min = -360;
+        let max = 360;
+        let minRadius = 25;
+        let maxRadius = 50;
+        let randomX = Math.random() * (max - min) + min;
+        let randomY = Math.random() * (max - min) + min;
+        let randomRadius = Math.random() * (maxRadius - minRadius) + minRadius;
+        starMesh.position.setFromSphericalCoords(randomRadius, THREE.Math.degToRad(randomX),THREE.Math.degToRad(randomY))
+
+        scene.add(starMesh);
+    }
 }
 
 function loadGLTFObject() {
