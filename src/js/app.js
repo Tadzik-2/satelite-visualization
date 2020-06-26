@@ -3,31 +3,48 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 import { Lensflare, LensflareElement } from 'three/examples/jsm/objects/Lensflare'
  
-var camera, scene, renderer, controls;
+var camera, scene, renderer, controls, raycaster, mouse;
 var geometry, material, mesh;
-let skybox, earth, sun, moon;
+let skybox, earth, sun, moon, sentinel;
+var INTERSECTED;
+
+const r = 422;
+let theta = 0;
+let dTheta = 0.15 * Math.PI / 1000;
+
  
 init();
 animate();
  
 function init() {
  
-    camera = new THREE.PerspectiveCamera( 70, window.innerWidth / window.innerHeight, 0.01, 300 );
-    camera.position.z = 1;
+    camera = new THREE.PerspectiveCamera( 70, window.innerWidth / window.innerHeight, 0.01, 7000 );
+    camera.position.z = 0.5;
  
     scene = new THREE.Scene();
+    
     renderer = new THREE.WebGLRenderer( { antialias: true } );
     renderer.setSize( window.innerWidth, window.innerHeight );
     renderer.setClearColor(0x000000);
+    renderer.setPixelRatio(window.devicePixelRatio);
     document.body.appendChild( renderer.domElement );
+    
     controls = new OrbitControls(camera, renderer.domElement);
     controls.maxZoom = 5;
-    controls.maxDistance = 5;
-    
-    // skybox = makeSkybox();
+    controls.maxDistance = 2000;
+    controls.enableDamping = true;
+
+    raycaster = new THREE.Raycaster();
+
+    mouse = new THREE.Vector2();
+
+
     earth = makeEarth();
     sun = makeSun();
     moon = makeMoon();
+
+    earth.rotation.x = 0.15;
+    earth.rotation.y = 3.4;
 
     scene.add(earth,sun,moon)
 
@@ -38,9 +55,22 @@ function init() {
     let light = makePointLight(0x404040, 3, 10, [0,0, -3]);
     scene.add(light);
 
-    makeStars(500);
+    makeStars(2000);
+
+    // // update the picking ray with the camera and mouse position
+    // raycaster.setFromCamera( mouse, camera );
+    
+    // // calculate objects intersecting the picking ray
+    // var intersects = raycaster.intersectObjects( sentinel.children );
+
+	// for ( var i = 0; i < intersects.length; i++ ) {
+
+	// 	intersects[ i ].object.material.color.set( 0xff0000 );
+
+	// }
  
 
+    window.addEventListener( 'mousemove', onMouseMove, false );
     window.addEventListener('resize', () => updateRendererSize(), false);
 }
 
@@ -55,6 +85,7 @@ function makePointLight(color, intensity, distance, position) {
     light.position.set(position[0],position[1], position[2]);
     return light;
 }
+
 
 function makeLensFlare() {
     let TextureLoader = new THREE.TextureLoader();
@@ -93,16 +124,16 @@ function makeSkybox(){
 }
 
 function makeSun() {
-    let sunlight = makePointLight(0xffffff, 2, 0, [-3,2,4]);
+    let sunlight = makePointLight(0xffffff, 1, 0, [-3,350,900]);
     let lensflare = makeLensFlare();
     sunlight.add( lensflare );
     return sunlight;
 }
 
 function makeMoon() {
-    let moonGeometry = new THREE.SphereGeometry(0.1,20,20);
+    let moonGeometry = new THREE.SphereGeometry(1.75,20,20);
     let moonTexture = new THREE.TextureLoader().load( '../assets/textures/moon_texture.jpg' );
-    let moonMaterial = new THREE.MeshBasicMaterial( { map: moonTexture } );
+    let moonMaterial = new THREE.MeshPhongMaterial( { map: moonTexture, shininess:5 } );
  
     let moonMesh = new THREE.Mesh( moonGeometry, moonMaterial );
     moonMesh.position.set(3,0,3)
@@ -111,50 +142,67 @@ function makeMoon() {
 
 
 function makeEarth() {
-    let earthGeometry = new THREE.SphereGeometry(7,128,128);
-    let earthTexture = new THREE.TextureLoader().load( '../assets/textures/earth_texture.jpg' );
-    let earthMaterial = new THREE.MeshBasicMaterial( { map: earthTexture, emissive: 0x87b5ff, emissiveMap: earthTexture} );
+    let earthGeometry = new THREE.SphereGeometry(70,48,48);
+    let earthTexture = new THREE.TextureLoader().load( '../assets/textures/8k_earth_daymap.jpg' );
+    let earthLightmap = new THREE.TextureLoader().load( '../assets/textures/8k_earth_specular_map.tif' );
+    earthTexture.anisotropy = renderer.capabilities.getMaxAnisotropy();
+    let earthMaterial = new THREE.MeshPhongMaterial( { map: earthTexture, shininess:2, specular:0xa8a8a8, specularMap: earthLightmap} );
+    earthMaterial.map.minFilter = THREE.LinearFilter;
  
     let earthMesh = new THREE.Mesh( earthGeometry, earthMaterial );
-    earthMesh.position.set(0,0,-8.3)
+    earthMesh.position.set(0,0,-71.3)
+    
     return earthMesh;
 }
 
 function makeStars(starsQuantity){
     for(let i=0;i<starsQuantity;i++){
-        console.log(i);
-        let starGeometry = new THREE.SphereGeometry(0.1,10,10);
+        let minStarScale = 0.1;
+        let maxStarScale = 1;
+        let randomStarScale = Math.random() * (maxStarScale - minStarScale) + minStarScale;
+        let starGeometry = new THREE.SphereGeometry(randomStarScale ,10,10);
         let starMaterial = new THREE.MeshPhongMaterial({color:0xffffff, emissive:0xffffff})
         let starMesh = new THREE.Mesh(starGeometry, starMaterial);
         let min = -360;
         let max = 360;
-        let minRadius = 25;
-        let maxRadius = 50;
+        let minRadius = 400;
+        let maxRadius = 5000;
         let randomX = Math.random() * (max - min) + min;
         let randomY = Math.random() * (max - min) + min;
         let randomRadius = Math.random() * (maxRadius - minRadius) + minRadius;
-        starMesh.position.setFromSphericalCoords(randomRadius, THREE.Math.degToRad(randomX),THREE.Math.degToRad(randomY))
+        starMesh.position.setFromSphericalCoords(randomRadius, THREE.Math.degToRad(randomX),THREE.Math.degToRad(randomY));
 
         scene.add(starMesh);
     }
+}
+
+function onMouseMove(evt){
+    evt.preventDefault();
+    // calculate mouse position in normalized device coordinates
+	// (-1 to +1) for both components
+
+	mouse.x = ( evt.clientX / window.innerWidth ) * 2 - 1;
+	mouse.y = - ( evt.clientY / window.innerHeight ) * 2 + 1;
 }
 
 function loadGLTFObject() {
     let loader = new GLTFLoader;
     loader.load(
         // resource URL
-        '../assets/models/Aura_27.glb',
+        '../assets/models/sentinel-1.gltf',
         // called when the resource is loaded
         function ( gltf ) {
-            gltf.scene.scale.set(0.01,0.01,0.01)
+            gltf.scene.scale.set(0.001,0.001,0.001)
+            
+            gltf.scene.traverse( function( node ) {
+
+                if ( node.isMesh ) { node.castShadow = true; }
+        
+            } );
+
+            sentinel = gltf.scene;
+            console.log(sentinel);
             scene.add( gltf.scene );
-            console.log(gltf)
-            gltf.animations; // Array<THREE.AnimationClip>
-            gltf.scene; // THREE.Group
-            gltf.scenes; // Array<THREE.Group>
-            gltf.cameras; // Array<THREE.Camera>
-            gltf.asset; // Object
-    
         },
         // called while loading is progressing
         function ( xhr ) {
@@ -176,8 +224,50 @@ function animate() {
  
     requestAnimationFrame( animate );
 
+    //Set moon orbit and rotation
     moon.rotation.y += 0.005;
-    earth.rotation.y += 0.0005;
-    renderer.render( scene, camera );
+    theta += dTheta;
+    moon.position.x = r * Math.cos(theta);
+    moon.position.z = -8.3 + r * Math.sin(theta);
+    
+    //Set earth rotation
+    earth.rotation.y += 0.00003;
+    earth.rotation.x += 0.00003;
+    
+    //Required when damping enabled
+    controls.update();
+   
+    render();
  
 }
+
+function render(){
+    // find intersections
+
+    raycaster.setFromCamera( mouse, camera );
+
+    var intersects = raycaster.intersectObjects( sentinel.children[2].children );
+
+    if ( intersects.length > 0 ) {
+ 
+        if ( INTERSECTED != intersects[ 0 ].object ) {
+
+            if ( INTERSECTED ) INTERSECTED.material.emissive.setHex( INTERSECTED.currentHex );
+
+            INTERSECTED = intersects[ 0 ].object;
+            INTERSECTED.currentHex = INTERSECTED.material.emissive.getHex();
+            INTERSECTED.material.emissive.setHex( 0xff0000 );
+
+        }
+
+    } else {
+
+        if ( INTERSECTED ) INTERSECTED.material.emissive.setHex( INTERSECTED.currentHex );
+
+        INTERSECTED = null;
+
+    }
+    
+    renderer.render( scene, camera );
+}
+
