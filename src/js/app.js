@@ -29,6 +29,7 @@ function init() {
     renderer.setSize( window.innerWidth, window.innerHeight );
     renderer.setClearColor(0x000000);
     renderer.setPixelRatio(window.devicePixelRatio);
+    renderer.outputEncoding = THREE.sRGBEncoding;
     document.body.appendChild( renderer.domElement );
     
     controls = new OrbitControls(camera, renderer.domElement);
@@ -105,7 +106,7 @@ function makeLensFlare() {
 }
 
 function addAmbientLight(){
-    let light = new THREE.AmbientLight( 0x404040 ); // soft white light
+    let light = new THREE.AmbientLight( 0xFFFFFF ); // soft white light
     scene.add( light );
 }
 
@@ -191,7 +192,7 @@ function loadGLTFObject() {
     let loader = new GLTFLoader;
     loader.load(
         // resource URL
-        '../assets/models/sentinel.glb',
+        '../assets/models/sentinel.gltf',
         // called when the resource is loaded
         function ( gltf ) {
             gltf.scene.scale.set(0.001,0.001,0.001)
@@ -200,9 +201,9 @@ function loadGLTFObject() {
 
                 if ( node.isMesh ) { node.castShadow = true; }
 
-                // if (node.isMesh){
-                //     node.material = new MeshPhongMaterial({color: 0x000000, specular:0xf0c91f});
-                // }
+                if (node.isMesh && node.name === "HUSK"){
+                   node.material.normalScale = new THREE.Vector2(15,15);
+                }
         
             } );
 
@@ -250,29 +251,29 @@ function animate() {
 function render(){
     // find intersections
 
-    raycaster.setFromCamera( mouse, camera );
+    // raycaster.setFromCamera( mouse, camera );
 
-    var intersects = raycaster.intersectObjects( sentinel.children, true);
+    // var intersects = raycaster.intersectObjects( sentinel.children, true);
 
-    if ( intersects.length > 0 ) {
-        console.log(intersects[ 0 ])
-        if ( INTERSECTED != intersects[ 0 ].object ) {
+    // if ( intersects.length > 0 ) {
+    //     console.log(intersects[ 0 ])
+    //     if ( INTERSECTED != intersects[ 0 ].object ) {
 
-            if ( INTERSECTED ) INTERSECTED.material.emissive.setHex( INTERSECTED.currentHex );
+    //         if ( INTERSECTED ) INTERSECTED.material.emissive.setHex( INTERSECTED.currentHex );
 
-            INTERSECTED = intersects[ 0 ].object;
-            INTERSECTED.currentHex = INTERSECTED.material.emissive.getHex();
-            INTERSECTED.material.emissive.setHex( 0xff0000 );
+    //         INTERSECTED = intersects[ 0 ].object;
+    //         INTERSECTED.currentHex = INTERSECTED.material.emissive.getHex();
+    //         INTERSECTED.material.emissive.setHex( 0xff0000 );
 
-        }
+    //     }
 
-    } else {
+    // } else {
 
-        if ( INTERSECTED ) INTERSECTED.material.emissive.setHex( INTERSECTED.currentHex );
+    //     if ( INTERSECTED ) INTERSECTED.material.emissive.setHex( INTERSECTED.currentHex );
 
-        INTERSECTED = null;
+    //     INTERSECTED = null;
 
-    }
+    // }
     
     renderer.render( scene, camera );
 }
