@@ -1,7 +1,9 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
+import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 import { Lensflare, LensflareElement } from 'three/examples/jsm/objects/Lensflare'
+import { MeshPhongMaterial } from 'three';
  
 var camera, scene, renderer, controls, raycaster, mouse;
 var geometry, material, mesh;
@@ -189,7 +191,7 @@ function loadGLTFObject() {
     let loader = new GLTFLoader;
     loader.load(
         // resource URL
-        '../assets/models/sentinel-1.gltf',
+        '../assets/models/sentinel.glb',
         // called when the resource is loaded
         function ( gltf ) {
             gltf.scene.scale.set(0.001,0.001,0.001)
@@ -197,6 +199,10 @@ function loadGLTFObject() {
             gltf.scene.traverse( function( node ) {
 
                 if ( node.isMesh ) { node.castShadow = true; }
+
+                // if (node.isMesh){
+                //     node.material = new MeshPhongMaterial({color: 0x000000, specular:0xf0c91f});
+                // }
         
             } );
 
@@ -213,7 +219,7 @@ function loadGLTFObject() {
         // called when loading has errors
         function ( error ) {
     
-            console.log( 'An error happened' );
+            console.log( 'An error happened' , error);
     
         }
     );
@@ -246,10 +252,10 @@ function render(){
 
     raycaster.setFromCamera( mouse, camera );
 
-    var intersects = raycaster.intersectObjects( sentinel.children[2].children );
+    var intersects = raycaster.intersectObjects( sentinel.children, true);
 
     if ( intersects.length > 0 ) {
- 
+        console.log(intersects[ 0 ])
         if ( INTERSECTED != intersects[ 0 ].object ) {
 
             if ( INTERSECTED ) INTERSECTED.material.emissive.setHex( INTERSECTED.currentHex );
