@@ -30,6 +30,8 @@ function init() {
     renderer.setClearColor(0x000000);
     renderer.setPixelRatio(window.devicePixelRatio);
     renderer.outputEncoding = THREE.sRGBEncoding;
+    // renderer.gammaOutput = true;
+    // renderer.gammaFactor = 2.2;
     document.body.appendChild( renderer.domElement );
     
     controls = new OrbitControls(camera, renderer.domElement);
@@ -42,21 +44,22 @@ function init() {
     mouse = new THREE.Vector2();
 
 
-    earth = makeEarth();
+    //earth = makeEarth();
     sun = makeSun();
-    moon = makeMoon();
+    //moon = makeMoon();
 
-    earth.rotation.x = 0.15;
-    earth.rotation.y = 3.4;
+    // earth.rotation.x = 0.15;
+    // earth.rotation.y = 3.4;
 
-    scene.add(earth,sun,moon)
+    scene.add(/*earth,*/sun/*,moon*/)
 
     loadGLTFObject();
 
     addAmbientLight();
     
     let light = makePointLight(0x404040, 3, 10, [0,0, -3]);
-    scene.add(light);
+    let light2 = makePointLight(0x404040, 3, 10, [0,1, 1]);
+    scene.add(light,light2);
 
     makeStars(2000);
 
@@ -149,7 +152,7 @@ function makeEarth() {
     let earthTexture = new THREE.TextureLoader().load( '../assets/textures/8k_earth_daymap.jpg' );
     let earthLightmap = new THREE.TextureLoader().load( '../assets/textures/8k_earth_specular_map.tif' );
     earthTexture.anisotropy = renderer.capabilities.getMaxAnisotropy();
-    let earthMaterial = new THREE.MeshPhongMaterial( { map: earthTexture, shininess:2, specular:0xa8a8a8, specularMap: earthLightmap} );
+    let earthMaterial = new THREE.MeshPhongMaterial( { map: earthTexture, shininess:0, specular:0x0, specularMap: earthLightmap} );
     earthMaterial.map.minFilter = THREE.LinearFilter;
  
     let earthMesh = new THREE.Mesh( earthGeometry, earthMaterial );
@@ -202,7 +205,6 @@ function loadGLTFObject() {
                 if ( node.isMesh ) { node.castShadow = true; }
 
                 if (node.isMesh && node.name === "HUSK"){
-                   node.material.normalScale = new THREE.Vector2(15,15);
                 }
         
             } );
@@ -232,14 +234,14 @@ function animate() {
     requestAnimationFrame( animate );
 
     //Set moon orbit and rotation
-    moon.rotation.y += 0.005;
-    theta += dTheta;
-    moon.position.x = r * Math.cos(theta);
-    moon.position.z = -8.3 + r * Math.sin(theta);
+    // moon.rotation.y += 0.005;
+    // theta += dTheta;
+    // moon.position.x = r * Math.cos(theta);
+    // moon.position.z = -8.3 + r * Math.sin(theta);
     
     //Set earth rotation
-    earth.rotation.y += 0.00003;
-    earth.rotation.x += 0.00003;
+    // earth.rotation.y += 0.00003;
+    // earth.rotation.x += 0.00003;
     
     //Required when damping enabled
     controls.update();
@@ -251,29 +253,29 @@ function animate() {
 function render(){
     // find intersections
 
-    // raycaster.setFromCamera( mouse, camera );
+    raycaster.setFromCamera( mouse, camera );
 
-    // var intersects = raycaster.intersectObjects( sentinel.children, true);
+    var intersects = raycaster.intersectObjects( sentinel.children, true);
 
-    // if ( intersects.length > 0 ) {
-    //     console.log(intersects[ 0 ])
-    //     if ( INTERSECTED != intersects[ 0 ].object ) {
+    if ( intersects.length > 0 ) {
+        console.log(intersects[ 0 ])
+        if ( INTERSECTED != intersects[ 0 ].object && intersects[0].object.material.name === "Solar-cell") {
 
-    //         if ( INTERSECTED ) INTERSECTED.material.emissive.setHex( INTERSECTED.currentHex );
+            if ( INTERSECTED ) INTERSECTED.material.emissive.setHex( INTERSECTED.currentHex );
 
-    //         INTERSECTED = intersects[ 0 ].object;
-    //         INTERSECTED.currentHex = INTERSECTED.material.emissive.getHex();
-    //         INTERSECTED.material.emissive.setHex( 0xff0000 );
+            INTERSECTED = intersects[ 0 ].object;
+            INTERSECTED.currentHex = INTERSECTED.material.emissive.getHex();
+            INTERSECTED.material.emissive.setHex( 0xff0000 );
 
-    //     }
+        }
 
-    // } else {
+    } else {
 
-    //     if ( INTERSECTED ) INTERSECTED.material.emissive.setHex( INTERSECTED.currentHex );
+        if ( INTERSECTED ) INTERSECTED.material.emissive.setHex( INTERSECTED.currentHex );
 
-    //     INTERSECTED = null;
+        INTERSECTED = null;
 
-    // }
+    }
     
     renderer.render( scene, camera );
 }
