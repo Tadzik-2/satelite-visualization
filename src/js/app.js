@@ -3,8 +3,9 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 import { Lensflare, LensflareElement } from 'three/examples/jsm/objects/Lensflare'
-import { MeshPhongMaterial } from 'three';
- 
+import { gsap } from "gsap";
+var TWEEN = require('@tweenjs/tween.js');
+  
 var camera, scene, renderer, controls, raycaster, mouse;
 var geometry, material, mesh;
 let skybox, earth, sun, moon, sentinel;
@@ -38,11 +39,13 @@ function init() {
     controls.maxZoom = 5;
     controls.maxDistance = 2000;
     controls.enableDamping = true;
+    controls.saveState();
 
     raycaster = new THREE.Raycaster();
 
     mouse = new THREE.Vector2();
 
+    console.log(camera)
 
     //earth = makeEarth();
     sun = makeSun();
@@ -78,7 +81,44 @@ function init() {
 
     window.addEventListener( 'mousemove', onMouseMove, false );
     window.addEventListener('resize', () => updateRendererSize(), false);
+
+    document.querySelector('#solar-detector').addEventListener('click', () => {
+        tweenRotation(new THREE.Quaternion().set(0.05, 0.09, 0.05, 0.3), 1000);
+        controls.target = new THREE.Vector3(0.005, 0.056, 0);
+    })
+
+    document.querySelector('#antenna').addEventListener('click', () => {
+        tweenRotation(new THREE.Quaternion().set(-0.04, 0, 0.03, 1), 1000);
+        controls.target = new THREE.Vector3(-0.1, -0.02, 0);
+    })
+
+    document.querySelector('#reset').addEventListener('click', () => {
+       
+        document.querySelector('.solar-detector-annotation').classList.add('active')
+
+        tweenRotation(new THREE.Quaternion().set(0,0,0.5,1), 1000);
+        controls.reset();
+    })
+
 }
+
+function tweenRotation(targetQuaternion, duration){
+    //tweens between zero and 1 values along Quaternion's SLERP method (http://threejs.org/docs/#Reference/Math/Quaternion)
+
+    let qm = new THREE.Quaternion(); //initiate an empty Qt to be filled by the .slerp function
+    let curQuaternion = camera.quaternion; //the starting point of your rotation
+
+    var tween = gsap.to({t:1},{
+        duration:2,
+        onUpdate:function(t){
+            THREE.Quaternion.slerp(curQuaternion, targetQuaternion, qm, this.t);
+            qm.normalize();
+            camera.rotation.setFromQuaternion(qm);
+        }
+    })
+
+}
+
 
 function updateRendererSize(){
     renderer.setSize(window.innerWidth, window.innerHeight);
@@ -258,7 +298,6 @@ function render(){
     var intersects = raycaster.intersectObjects( sentinel.children, true);
 
     if ( intersects.length > 0 ) {
-        console.log(intersects[ 0 ])
         if ( INTERSECTED != intersects[ 0 ].object && intersects[0].object.material.name === "Solar-cell") {
 
             if ( INTERSECTED ) INTERSECTED.material.emissive.setHex( INTERSECTED.currentHex );
@@ -279,4 +318,6 @@ function render(){
     
     renderer.render( scene, camera );
 }
+
+
 
